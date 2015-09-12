@@ -18,29 +18,54 @@ Function Start-RDP {
 			Position=0, 
 			Mandatory=$true, 
 			ValueFromPipeline=$true)]
-		[string]$Server,
+		[string]$ComputerName,
+        [int]$Width = 0,
+        [int]$Height = 0,
 		[switch]$Fullscreen,
+        [switch]$Console,
+        [switch]$Public,
+        [switch]$Admin,
+        [switch]$Span,
 		[switch]$PromptCred
 	)
 
 	begin{
 		$arguments = "";
-        $cred = null;
+        $username = "";
+        $password = "";
 
+        if($Width -ne 0 -and $Height -ne 0){
+            $arguments += " /w:$Width /h:$Height";
+        }
 		if($Fullscreen){
 			$arguments += " /f";
 		}
+        if($Console){
+            $arguments += " /console";
+        }
+        if($Admin){
+            $arguments += " /admin";
+        }
+        if($Span){
+            $arguments += " /span";
+        }
+        if($Public){
+            $arguments += " /public";
+        }
         if($PromptCred){
            $cred = Get-Credential 
+           $netCred = $cred.GetNetworkCredential();
+           $username = $cred.UserName;
+           $password = $netCred.Password;
         }
 	}
 
 	process{
         if($cred)
         {
-            LinkServerCred $Server,$cred;
+           LinkServerCred
         }
-        InvokeMstsc $Server, $arguments;
+        InvokeMstsc;
 	}
 
 	end{
@@ -50,19 +75,18 @@ Function Start-RDP {
 
 Function LinkServerCred
 {
-    param([string]$server, [PSCredential]$cred)
-    $username = $cred.UserName;
-    $password = $cred.GetNetworkCredential().Password;
-    $commandLine = "cmdkey /generic:$server /user:$username /pass:$password";
-    Write-Verbose "Adding $username to credential store for $server";
-    Write-Verbose "Executing $commandLine"
+    $commandLine = "cmdkey.exe /generic:$ComputerName /user:$username /pass:$password";
+    Write-Verbose "Adding $username to credential store for $ComputerName";
+    #Write-Verbose "Executing $commandLine"
     #Invoke-Expression $commandLine;
 }
 Function InvokeMstsc
-{   param([string]$server, [string]$args)
-	$commandLine = "mstsc.exe /v:$server $args";
+{
+	$commandLine = "mstsc.exe /v:$ComputerName $arguments";
 	Write-Verbose "Executing $commandLine"
 	#Invoke-Expression $commandLine;
 }
 
-Export-ModuleMember -function Start-RDP
+New-Alias -Name "rdp" -Value "Start-RDP"
+
+Export-ModuleMember -function Start-RDP -Alias rdp
