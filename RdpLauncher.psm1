@@ -20,18 +20,27 @@ Function Start-RDP {
 			ValueFromPipeline=$true)]
 		[string]$Server,
 		[switch]$Fullscreen,
-		[switch]$Credential
+		[switch]$PromptCred
 	)
 
 	begin{
 		$arguments = "";
+        $cred = null;
+
 		if($Fullscreen){
 			$arguments += " /f";
 		}
+        if($PromptCred){
+           $cred = Get-Credential 
+        }
 	}
 
 	process{
-
+        if($cred)
+        {
+            LinkServerCred $Server,$cred;
+        }
+        InvokeMstsc $Server, $arguments;
 	}
 
 	end{
@@ -39,10 +48,21 @@ Function Start-RDP {
 	}
 }
 
-Function InvokeMstsc([string]$server, [string]$args){
+Function LinkServerCred
+{
+    param([string]$server, [PSCredential]$cred)
+    $username = $cred.UserName;
+    $password = $cred.GetNetworkCredential().Password;
+    $commandLine = "cmdkey /generic:$server /user:$username /pass:$password";
+    Write-Verbose "Adding $username to credential store for $server";
+    Write-Verbose "Executing $commandLine"
+    #Invoke-Expression $commandLine;
+}
+Function InvokeMstsc
+{   param([string]$server, [string]$args)
 	$commandLine = "mstsc.exe /v:$server $args";
 	Write-Verbose "Executing $commandLine"
-	Invoke-Expression $commandLine;
+	#Invoke-Expression $commandLine;
 }
 
 Export-ModuleMember -function Start-RDP
