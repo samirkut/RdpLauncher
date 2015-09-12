@@ -5,10 +5,38 @@ Launch RDP sessions from powershell
 .Description
 Launch RDP session from powershell. This module supports launching sessions to multiple computers, using stored credentials as well as provide an autocomplete for server addresses and aliases from an xml config file
 
-.Parameter Server
-The server address or alias to connect to
+.Parameter ComputerName
+The server address to connect to
 
+.Parameter Search
+The server address or alias to connect to. This parameter will provide autocomplete validation from rdplist.xml in the HOME directory of the user
 
+.Parameter SaveCred
+Prompt and save credentials for future use. This will also force an udpate of existing credentials for the server
+
+.Parameter Width
+Width of RDP window
+
+.Parameter Height
+Height of RDP window
+
+.Parameter Fullscreen
+Open RDP window fullscreen
+
+.Parameter Span
+Span window across multiple monitors
+
+.Parameter MultiMon
+Multi-monitor mode
+
+.Parameter Console
+Connect in console mode
+
+.Parameter Public
+Connect in public mode
+
+.Parameter Admin
+Connect in admin mode
 #>
 
 Function Start-RDP {
@@ -27,7 +55,7 @@ Function Start-RDP {
         [switch]$Admin,
         [switch]$Span,
         [switch]$MultiMon,
-		[switch]$PromptCred
+		[switch]$SaveCred
 	)
 
     dynamicparam{
@@ -97,7 +125,7 @@ Function Start-RDP {
         if($Public){
             $arguments += " /public";
         }
-        if($PromptCred){
+        if($SaveCred){
            $cred = Get-Credential 
            $netCred = $cred.GetNetworkCredential();
            $username = $cred.UserName;
@@ -149,14 +177,14 @@ Function LinkServerCred([string]$server)
 
     $commandLine = "cmdkey.exe /generic:$ComputerCmdkey /user:$username /pass:$password";
     Write-Verbose "Adding $username to credential store for $ComputerCmdkey";
-    Write-Verbose "Executing $commandLine"
-    #Invoke-Expression $commandLine;
+    #Write-Verbose "Executing $commandLine"
+    Invoke-Expression $commandLine;
 }
 Function InvokeMstsc([string]$server)
 {
 	$commandLine = "mstsc.exe /v:$server $arguments";
 	Write-Verbose "Executing $commandLine"
-	#Invoke-Expression $commandLine;
+	Invoke-Expression $commandLine;
 }
 Function GetServerAliases
 {
